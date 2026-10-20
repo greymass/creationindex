@@ -1,0 +1,8 @@
+github.com/greymass/roborovski/libraries/actionstream v1.0.0-beta7 h1:Y4Ij5RDRONDQ0jdm1qCYP+XXJ5FDX2ufpQ94SHjJ5rc=
+github.com/greymass/roborovski/libraries/actionstream v1.0.0-beta7/go.mod h1:lPXCn7sRIL1NOHtccjY8MIiyNFb5USNUJBcs97vDL9I=
+github.com/greymass/roborovski/libraries/chain v1.0.0-beta7 h1:Gc1GU1F9GSMiMwe/g8HE+OCncstbRzLosORAczt40H4=
+github.com/greymass/roborovski/libraries/chain v1.0.0-beta7/go.mod h1:hsqR1cDpB8zzv1DfEqxin7vz44ljSg32J2ZX7cGgjcg=
+github.com/greymass/roborovski/libraries/config v1.0.0-beta7 h1:paWHRIZNg44wbUeuUL632YeeBmHlVfAjUFOuTySxNHM=
+github.com/greymass/roborovski/libraries/config v1.0.0-beta7/go.mod h1:E7HmzHAjsIHXxBsTFFxZgJzboXc7pCDv3i4iN2O3jDo=
+github.com/greymass/roborovski/libraries/logger v1.0.0-beta7 h1:yWFdNbDvalk0Yik1mBgn5Gidoi4hnpCGb+Qx6Dm+wqk=
+github.com/greymass/roborovski/libraries/logger v1.0.0-beta7/go.mod h1:Epe+WQixaYjjLI1vERdJRJ8AC00l6npF7kfbCQM+MAc=

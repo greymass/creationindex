@@ -1,0 +1,11 @@
+# creationindex configuration
+
+# Data source
+actionstream-source = stream://localhost:9081
+
+# Logging
+# log-filter = startup,sync,status
+# log-file = ./creationindex.log
+
+# Debug
+# debug = false
