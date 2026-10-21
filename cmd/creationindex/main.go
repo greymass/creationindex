@@ -44,6 +44,7 @@ func main() {
 	logger.Printf("startup", "  db-path: %s", cfg.DBPath)
 	logger.Printf("startup", "  actionstream-source: %s", cfg.ActionStreamSource)
 	logger.Printf("startup", "  program-account: %s", cfg.ProgramAccount)
+	logger.Printf("startup", "  chain-url: %s", cfg.ChainURL)
 	logger.Printf("startup", "  http-listen: %s", cfg.HTTPListen)
 	logger.Printf("startup", "  http-socket: %s", cfg.HTTPSocket)
 
@@ -72,7 +73,7 @@ func main() {
 		if addr == "none" || addr == "" {
 			continue
 		}
-		srv := &http.Server{Handler: api.New(db, cfg.ProgramAccount)}
+		srv := &http.Server{Handler: api.New(db, cfg.ProgramAccount, cfg.ChainURL)}
 		go srv.Serve(server.SocketListen(addr))
 		servers = append(servers, srv)
 	}

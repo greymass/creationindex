@@ -24,6 +24,7 @@ Configuration is INI and command-line flags; flags override the file. Copy `conf
 | `http-socket` | HTTP API Unix socket path ending in `.sock`, or `none` | `none` |
 | `actionstream-source` | Roborovski actionstream URL (`stream://host:port` or `stream:///path.sock`) | `stream://localhost:9081` |
 | `program-account` | Gift program account (`gift.vaulta` on Vaulta, `gift.gm` on Jungle 4): its `giftram`s count as program gifts and the gift stream indexes its actions; when unset, no gift counts as a program gift and the gift stream stays off | none |
+| `chain-url` | Chain API URL that `get_endowment` reads the program account from with `get_account` | none |
 | `log-filter` | Comma-separated log categories | `startup,sync,status,http` |
 | `log-file` | Also write logs to this file | none |
 | `debug` | Log every category | `false` |
@@ -38,7 +39,11 @@ You query creationindex with GET query parameters, or with a POST JSON body that
 curl 'localhost:9480/v1/creationindex/get_creation?account=willsunshine'
 ```
 
-The network routes are `get_creation`, `get_creations` (by `creator` or `program_creator`, paged with `after` and `limit`), `get_daily` (UTC days `from` and `to`, at most 366), `get_day_creators` (one `day`, ranked, paged with `offset` and `limit`) and `health`. Every field is always present: names are `""` when empty, figures the chain does not state are `null`, and lists are `[]`. Errors return `{"error": "..."}` with status 400 for a bad parameter and 404 for an unknown account.
+The network routes are `get_creation`, `get_creations` (by `creator` or `program_creator`, paged with `after` and `limit`), `get_daily` (UTC days `from` and `to`, at most 366), `get_day_creators` (one `day`, ranked, paged with `offset` and `limit`) and `health`.
+
+The program routes answer for the configured `program-account`. `get_program_daily` gives program gifts per UTC day per program creator, with a histogram of gifted byte sizes. `get_quota` takes a `program_creator` and lists each registration from `addcreator` to `rmcreator` with its quota changes, suspensions and quota windows, rebuilt with the gift contract's arithmetic. `get_program_events` lists program events oldest first, filtered by `type` (`admin`, `program_gift`, `return`, `ram_movement`) and `program_creator`, paged with `after` and `limit`. `get_endowment` reads the program account's RAM from `chain-url` and caches it for 10 seconds.
+
+Every field is always present: names are `""` when empty, figures the chain does not state are `null`, and lists are `[]`. Errors return `{"error": "..."}` with status 400 for a bad parameter and 404 for an unknown account. `get_endowment` returns 503 when `chain-url` is unset and 502 when the chain API fails.
 
 ## Test fixtures
 

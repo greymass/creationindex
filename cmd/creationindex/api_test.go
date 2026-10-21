@@ -120,8 +120,8 @@ func assertJSON(t *testing.T, h http.Handler, method, path, body string, wantCod
 const zeroKind = `{"contributions": 0, "bytes": null, "without_bytes": 0, "requested_bytes": null, "quantity": null}`
 
 func TestGetCreationMatchesPrototype(t *testing.T) {
-	v := api.New(vaultaStore(t), "gift.vaulta")
-	j := api.New(jungleStore(t), "gift.gm")
+	v := api.New(vaultaStore(t), "gift.vaulta", "")
+	j := api.New(jungleStore(t), "gift.gm", "")
 
 	assertJSON(t, v, "GET", "/v1/creationindex/get_creation?account=willsunshine", "", 200, `{
 		"account": "willsunshine", "creator": "openvaccount", "program_creator": "",
@@ -156,7 +156,7 @@ func TestGetCreationMatchesPrototype(t *testing.T) {
 }
 
 func TestRequestErrors(t *testing.T) {
-	v := api.New(vaultaStore(t), "gift.vaulta")
+	v := api.New(vaultaStore(t), "gift.vaulta", "")
 	for _, c := range []struct {
 		method, path, body string
 		code               int
@@ -215,8 +215,8 @@ func pageAccounts(t *testing.T, h http.Handler, path string) ([]string, bool, ui
 }
 
 func TestGetCreationsPaging(t *testing.T) {
-	v := api.New(vaultaStore(t), "gift.vaulta")
-	j := api.New(jungleStore(t), "gift.gm")
+	v := api.New(vaultaStore(t), "gift.vaulta", "")
+	j := api.New(jungleStore(t), "gift.gm", "")
 
 	got, more, next := pageAccounts(t, j, "/v1/creationindex/get_creations?program_creator=gm&limit=2")
 	if !slices.Equal(got, []string{"ssyfp5xf.gm", "btvxpqb4.gm"}) || !more || next != 396333059 {
@@ -276,14 +276,14 @@ func TestGetCreationsByProgramCreatorWaitsForEosioStream(t *testing.T) {
 	if err := db.Commit(b); err != nil {
 		t.Fatal(err)
 	}
-	got, more, next := pageAccounts(t, api.New(db, "gift.gm"), "/v1/creationindex/get_creations?program_creator=gm")
+	got, more, next := pageAccounts(t, api.New(db, "gift.gm", ""), "/v1/creationindex/get_creations?program_creator=gm")
 	if !slices.Equal(got, []string{"ssyfp5xf.gm"}) || more || next != 396333027 {
 		t.Errorf("%v more=%v next=%d; want the page to stop where the eosio stream has not reached", got, more, next)
 	}
 }
 
 func TestGetDaily(t *testing.T) {
-	v := api.New(vaultaStore(t), "gift.vaulta")
+	v := api.New(vaultaStore(t), "gift.vaulta", "")
 	genesis := `{
 		"day": "2018-06-09", "creations": 31, "creations_without_ram": 1,
 		"kinds": {
@@ -321,7 +321,7 @@ func TestGetDayCreatorsRanksAndPages(t *testing.T) {
 	if err := db.Commit(b); err != nil {
 		t.Fatal(err)
 	}
-	v := api.New(db, "gift.vaulta")
+	v := api.New(db, "gift.vaulta", "")
 
 	rank := func(path string) ([]string, bool, uint64) {
 		code, body := call(t, v, "GET", path, "")
@@ -367,11 +367,11 @@ func TestGetDayCreatorsRanksAndPages(t *testing.T) {
 }
 
 func TestHealth(t *testing.T) {
-	assertJSON(t, api.New(vaultaStore(t), "gift.vaulta"), "GET", "/v1/creationindex/health", "", 200, `{
+	assertJSON(t, api.New(vaultaStore(t), "gift.vaulta", ""), "GET", "/v1/creationindex/health", "", 200, `{
 		"status": "ok", "last_global_seq": 368360304310, "last_block_time": "2026-10-20T22:29:07.000Z",
 		"program_last_global_seq": 0, "creations": 37, "program_account": "gift.vaulta"
 	}`)
-	assertJSON(t, api.New(jungleStore(t), "gift.gm"), "GET", "/v1/creationindex/health", "", 200, `{
+	assertJSON(t, api.New(jungleStore(t), "gift.gm", ""), "GET", "/v1/creationindex/health", "", 200, `{
 		"status": "ok", "last_global_seq": 396724550, "last_block_time": "2026-10-20T15:21:32.500Z",
 		"program_last_global_seq": 396724549, "creations": 14, "program_account": "gift.gm"
 	}`)
@@ -380,7 +380,7 @@ func TestHealth(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer empty.Close()
-	assertJSON(t, api.New(empty, "gift.vaulta"), "GET", "/v1/creationindex/health", "", 200, `{
+	assertJSON(t, api.New(empty, "gift.vaulta", ""), "GET", "/v1/creationindex/health", "", 200, `{
 		"status": "ok", "last_global_seq": 0, "last_block_time": null,
 		"program_last_global_seq": 0, "creations": 0, "program_account": "gift.vaulta"
 	}`)
