@@ -5,6 +5,7 @@ import (
 
 	"github.com/cockroachdb/pebble"
 	"github.com/greymass/creationindex/internal/attribution"
+	"github.com/greymass/creationindex/internal/daily"
 	"github.com/greymass/creationindex/internal/store"
 	"github.com/greymass/roborovski/libraries/actionstream"
 	"github.com/greymass/roborovski/libraries/chain"
@@ -50,6 +51,9 @@ func applyEosioTransaction(b *pebble.Batch, actions []actionstream.Action, progr
 		if err := store.PutCreation(b, &creations[i]); err != nil {
 			return 0, err
 		}
+	}
+	if err := daily.Apply(b, creations); err != nil {
+		return 0, err
 	}
 	return len(creations), store.SetCreationCount(b, count+uint64(len(creations)))
 }
