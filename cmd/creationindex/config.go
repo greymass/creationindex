@@ -13,4 +13,5 @@ type Config struct {
 	ActionStreamSource string `name:"actionstream-source" default:"stream://localhost:9081" help:"ActionStream source (stream://host:port or stream:///path/to.sock)"`
 
 	ProgramAccount string `name:"program-account" help:"Gift program account (gift.vaulta on Vaulta, gift.gm on Jungle 4)"`
+	ChainURL       string `name:"chain-url" help:"Chain API URL for get_endowment's get_account read"`
 }

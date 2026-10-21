@@ -28,20 +28,29 @@ const (
 type handler func(s *Server, r pebble.Reader, p params) (any, error)
 
 var routes = map[string]handler{
-	"get_creation":     (*Server).getCreation,
-	"get_creations":    (*Server).getCreations,
-	"get_daily":        (*Server).getDaily,
-	"get_day_creators": (*Server).getDayCreators,
-	"health":           (*Server).health,
+	"get_creation":       (*Server).getCreation,
+	"get_creations":      (*Server).getCreations,
+	"get_daily":          (*Server).getDaily,
+	"get_day_creators":   (*Server).getDayCreators,
+	"get_program_daily":  (*Server).getProgramDaily,
+	"get_quota":          (*Server).getQuota,
+	"get_program_events": (*Server).getProgramEvents,
+	"get_endowment":      (*Server).getEndowment,
+	"health":             (*Server).health,
 }
 
 type Server struct {
 	db             *store.Store
 	programAccount string
+	chainURL       string
+	now            func() time.Time
+	endowment      endowmentCache
 }
 
-func New(db *store.Store, programAccount string) *Server {
-	return &Server{db: db, programAccount: programAccount}
+func New(db *store.Store, programAccount, chainURL string) *Server {
+	s := &Server{db: db, programAccount: programAccount, chainURL: chainURL, now: time.Now}
+	s.endowment.client.Timeout = 5 * time.Second
+	return s
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
