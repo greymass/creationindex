@@ -14,7 +14,12 @@ import (
 
 func loadFixture(t *testing.T, name string) []actionstream.Action {
 	t.Helper()
-	f, err := os.Open(filepath.Join("..", "..", "internal", "attribution", "testdata", name+".jsonl"))
+	return loadFixtureFrom(t, "attribution", name)
+}
+
+func loadFixtureFrom(t *testing.T, pkg, name string) []actionstream.Action {
+	t.Helper()
+	f, err := os.Open(filepath.Join("..", "..", "internal", pkg, "testdata", name+".jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,5 +119,52 @@ func TestEosioTransactionsWrittenInOneBatch(t *testing.T) {
 	}
 	if len(indexed) != 31 || indexed[0] != 134 || indexed[1] != 486 || indexed[30] != 921 {
 		t.Errorf("eosio creator index seqs %v", indexed)
+	}
+}
+
+func TestEosioProgramEventsOutsideCreations(t *testing.T) {
+	db, err := store.Open(filepath.Join(t.TempDir(), "creationindex.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	var buf txBuffer
+	var txs [][]actionstream.Action
+	for _, a := range loadFixtureFrom(t, "program", "gift-gm-eosio") {
+		if done := buf.push(a); done != nil {
+			txs = append(txs, done)
+		}
+	}
+	txs = append(txs, buf.take())
+
+	b := db.NewBatch()
+	total := 0
+	for _, tx := range txs {
+		n, err := applyEosioTransaction(b, tx, chain.StringToName("gift.gm"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		total += n
+	}
+	if err := db.Commit(b); err != nil {
+		t.Fatal(err)
+	}
+	if total != 14 {
+		t.Errorf("%d creations, want 14", total)
+	}
+	if v, err := store.GetCreationCount(db.DB()); err != nil || v != 14 {
+		t.Errorf("creation count %d, %v", v, err)
+	}
+	for _, seq := range []uint64{365287401, 396535542} {
+		val, closer, err := db.DB().Get(store.ProgramEventKey(seq))
+		if err != nil {
+			t.Fatalf("no program event at seq %d outside a creation: %v", seq, err)
+		}
+		e, err := store.DecodeProgramEvent(val)
+		closer.Close()
+		if err != nil || e.InCreation {
+			t.Errorf("seq %d: %+v, %v", seq, e, err)
+		}
 	}
 }

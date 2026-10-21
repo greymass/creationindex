@@ -141,3 +141,18 @@ func PutCreation(b *pebble.Batch, c *Creation) error {
 	}
 	return b.Set(CreatorIndexKey(c.Creator, c.GlobalSeq), EncodeName(c.Account), nil)
 }
+
+func GetGiftedBalance(r pebble.Reader, giftee uint64) (int64, error) {
+	val, err := get(r, GiftedBalanceKey(giftee))
+	if err != nil || val == nil {
+		return 0, err
+	}
+	return DecodeGiftedBalance(val)
+}
+
+func SetGiftedBalance(b *pebble.Batch, giftee uint64, bytes int64) error {
+	if bytes == 0 {
+		return b.Delete(GiftedBalanceKey(giftee), nil)
+	}
+	return b.Set(GiftedBalanceKey(giftee), EncodeGiftedBalance(bytes), nil)
+}

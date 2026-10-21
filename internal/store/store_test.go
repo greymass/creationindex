@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/greymass/roborovski/libraries/chain"
 )
 
 func openTemp(t *testing.T) (*Store, string) {
@@ -133,5 +134,33 @@ func TestPutCreationWritesRecordAndCreatorIndex(t *testing.T) {
 	}
 	if account, err := DecodeName(val); err != nil || account != 7 {
 		t.Errorf("creator index = %d, %v", account, err)
+	}
+}
+
+func TestGiftedBalance(t *testing.T) {
+	s, err := Open(filepath.Join(t.TempDir(), "db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	giftee := chain.StringToName("reinaldo.gm")
+	b := s.NewBatch()
+	if err := SetGiftedBalance(b, giftee, 4000); err != nil {
+		t.Fatal(err)
+	}
+	if v, err := GetGiftedBalance(b, giftee); err != nil || v != 4000 {
+		t.Fatalf("balance in batch %d, %v", v, err)
+	}
+	if err := SetGiftedBalance(b, giftee, 0); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Commit(b); err != nil {
+		t.Fatal(err)
+	}
+	if v, err := get(s.DB(), GiftedBalanceKey(giftee)); err != nil || v != nil {
+		t.Errorf("zero balance left row %x, %v", v, err)
+	}
+	if v, err := GetGiftedBalance(s.DB(), giftee); err != nil || v != 0 {
+		t.Errorf("balance %d, %v", v, err)
 	}
 }

@@ -104,20 +104,8 @@ func Attribute(actions []actionstream.Action, programAccount uint64) ([]store.Cr
 				GlobalSeq: a.GlobalSeq,
 			})
 		case "logbuyram":
-			var d logbuyramData
-			if err := decode(a, &d); err != nil {
+			if err := readBuyLog(a, logs); err != nil {
 				return nil, err
-			}
-			q, err := asset(a, d.Quantity)
-			if err != nil {
-				return nil, err
-			}
-			fee, err := asset(a, d.Fee)
-			if err != nil {
-				return nil, err
-			}
-			if a.CreatorActionOrdinal != 0 {
-				logs[a.CreatorActionOrdinal] = buyLog{bytes: int64(d.Bytes), quantity: q, fee: fee}
 			}
 		default:
 			c, err := contributionOf(a, programAccount)
@@ -152,6 +140,25 @@ func Attribute(actions []actionstream.Action, programAccount uint64) ([]store.Cr
 		cr.Contributions = append(cr.Contributions, c)
 	}
 	return creations, nil
+}
+
+func readBuyLog(a *actionstream.Action, logs map[uint32]buyLog) error {
+	var d logbuyramData
+	if err := decode(a, &d); err != nil {
+		return err
+	}
+	q, err := asset(a, d.Quantity)
+	if err != nil {
+		return err
+	}
+	fee, err := asset(a, d.Fee)
+	if err != nil {
+		return err
+	}
+	if a.CreatorActionOrdinal != 0 {
+		logs[a.CreatorActionOrdinal] = buyLog{bytes: int64(d.Bytes), quantity: q, fee: fee}
+	}
+	return nil
 }
 
 func contributionOf(a *actionstream.Action, programAccount uint64) (*contribution, error) {
