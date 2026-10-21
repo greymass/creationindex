@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"time"
 
 	"github.com/cockroachdb/pebble"
@@ -178,6 +179,10 @@ func (s *eosioSyncer) loop(cursor store.Cursor) {
 				received, creations, cursor.GlobalSeq, s.client.GetHeadSeq(), s.client.GetLIBSeq(), s.client.IsCatchupComplete())
 		default:
 			action, ok, err := s.client.NextWithTimeout(100 * time.Millisecond)
+			if errors.Is(err, actionstream.ErrAlreadyClosed) {
+				commit()
+				return
+			}
 			if err != nil {
 				logger.Printf("sync", "eosio stream: %v", err)
 				continue
