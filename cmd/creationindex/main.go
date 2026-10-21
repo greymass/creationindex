@@ -38,15 +38,16 @@ func main() {
 	logger.Printf("startup", "creationindex %s starting", Version)
 	logger.Printf("startup", "  db-path: %s", cfg.DBPath)
 	logger.Printf("startup", "  actionstream-source: %s", cfg.ActionStreamSource)
+	logger.Printf("startup", "  program-account: %s", cfg.ProgramAccount)
 
 	db, err := store.Open(cfg.DBPath)
 	if err != nil {
 		logger.Fatal("%v", err)
 	}
 
-	syncer := NewSyncer(cfg)
-	if err := syncer.Start(); err != nil {
-		logger.Fatal("Failed to start syncer: %v", err)
+	eosio := newEosioSyncer(db, cfg)
+	if err := eosio.Start(); err != nil {
+		logger.Fatal("Failed to start eosio syncer: %v", err)
 	}
 
 	sigChan := make(chan os.Signal, 1)
@@ -54,7 +55,7 @@ func main() {
 	<-sigChan
 
 	logger.Printf("startup", "Shutting down...")
-	syncer.Stop()
+	eosio.Stop()
 	if err := db.Close(); err != nil {
 		logger.Printf("startup", "Failed to close database: %v", err)
 	}

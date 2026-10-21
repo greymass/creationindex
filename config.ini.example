@@ -3,6 +3,9 @@
 # Storage
 db-path = ./creationindex.db
 
+# Gift program account (gift.gm on Jungle 4)
+program-account = gift.vaulta
+
 # Data source
 actionstream-source = stream://localhost:9081
 

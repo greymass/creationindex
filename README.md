@@ -20,12 +20,23 @@ Configuration is INI and command-line flags; flags override the file. Copy `conf
 | Key | Meaning | Default |
 |-----|---------|---------|
 | `db-path` | Pebble database directory | `./creationindex.db` |
+| `program-account` | Gift program account; its `giftram`s count as program gifts (`gift.gm` on Jungle 4) | `gift.vaulta` |
 | `actionstream-source` | Roborovski actionstream URL (`stream://host:port` or `stream:///path.sock`) | `stream://localhost:9081` |
 | `log-filter` | Comma-separated log categories | `startup,sync,status` |
 | `log-file` | Also write logs to this file | none |
 | `debug` | Log every category | `false` |
 
 When a new build changes the storage schema, creationindex refuses to start and logs the database path. Delete that directory and start creationindex again; it replays from seq 1.
+
+## Test fixtures
+
+Fixtures in `internal/attribution/testdata/` are real stream actions, captured with `cmd/capture` from a host that serves the actionstream. Start the capture at the transaction's first global sequence and name each transaction to keep:
+
+```
+go run ./cmd/capture -source stream:///ramdisk/vaulta/actionstream.sock -start 368360304285 -out internal/attribution/testdata willsunshine=3efce2e5432e2e1ce595615e19fa245118e6766414022bc935a7a8eebfa79258
+```
+
+It subscribes with the service's `eosio` filter and writes each named transaction's actions to `<name>.jsonl`, one stream `Action` per line.
 
 ## Licence
 
