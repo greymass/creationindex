@@ -141,3 +141,18 @@ func PutCreation(b *pebble.Batch, c *Creation) error {
 	}
 	return b.Set(CreatorIndexKey(c.Creator, c.GlobalSeq), EncodeName(c.Account), nil)
 }
+
+func GetDailyFigures(r pebble.Reader, k []byte) (*DailyFigures, error) {
+	val, err := get(r, k)
+	if err != nil {
+		return nil, err
+	}
+	if val == nil {
+		return &DailyFigures{}, nil
+	}
+	return DecodeDailyFigures(val)
+}
+
+func SetDailyFigures(b *pebble.Batch, k []byte, d *DailyFigures) error {
+	return b.Set(k, EncodeDailyFigures(d), nil)
+}
