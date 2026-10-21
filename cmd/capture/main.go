@@ -12,16 +12,20 @@ import (
 	"time"
 
 	"github.com/greymass/creationindex/internal/attribution"
+	"github.com/greymass/creationindex/internal/program"
 	"github.com/greymass/roborovski/libraries/actionstream"
+	"github.com/greymass/roborovski/libraries/chain"
 )
 
-var streams = map[string]func() actionstream.Filter{
-	"eosio": attribution.Filter,
+var streams = map[string]func(program uint64) actionstream.Filter{
+	"eosio": func(uint64) actionstream.Filter { return attribution.Filter() },
+	"gift":  program.GiftFilter,
 }
 
 func main() {
 	source := flag.String("source", "stream://localhost:9081", "actionstream source (stream://host:port or stream:///path.sock)")
-	stream := flag.String("stream", "eosio", "service stream whose filter to subscribe with")
+	stream := flag.String("stream", "eosio", "service stream whose filter to subscribe with (eosio or gift)")
+	programAccount := flag.String("program-account", "", "gift program account for the gift stream")
 	start := flag.Uint64("start", 1, "global seq to subscribe from")
 	out := flag.String("out", "testdata", "directory for <name>.jsonl files")
 	idle := flag.Duration("idle", 10*time.Second, "stop after this long without an action once every named transaction is seen")
@@ -32,16 +36,19 @@ func main() {
 	}
 	flag.Parse()
 
-	if err := run(*source, *stream, *start, *out, *idle, *timeout, flag.Args()); err != nil {
+	if err := run(*source, *stream, *programAccount, *start, *out, *idle, *timeout, flag.Args()); err != nil {
 		fmt.Fprintf(os.Stderr, "capture: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(source, stream string, start uint64, out string, idle, timeout time.Duration, args []string) error {
+func run(source, stream, programAccount string, start uint64, out string, idle, timeout time.Duration, args []string) error {
 	filter, ok := streams[stream]
 	if !ok {
 		return fmt.Errorf("unknown stream %q", stream)
+	}
+	if stream == "gift" && programAccount == "" {
+		return fmt.Errorf("the gift stream needs -program-account")
 	}
 	if len(args) == 0 {
 		return fmt.Errorf("name at least one name=trx_id")
@@ -61,7 +68,7 @@ func run(source, stream string, start uint64, out string, idle, timeout time.Dur
 
 	cfg := actionstream.DefaultClientConfig()
 	cfg.Decode = true
-	client := actionstream.NewClient(addr, filter(), start, cfg)
+	client := actionstream.NewClient(addr, filter(chain.StringToName(programAccount)), start, cfg)
 	if err := client.Connect(); err != nil {
 		return err
 	}

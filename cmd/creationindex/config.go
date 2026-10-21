@@ -7,7 +7,7 @@ type Config struct {
 
 	DBPath string `name:"db-path" default:"./creationindex.db" help:"Path to Pebble database"`
 
-	ProgramAccount string `name:"program-account" default:"gift.vaulta" help:"Gift program account (gift.vaulta on Vaulta, gift.gm on Jungle 4)"`
-
 	ActionStreamSource string `name:"actionstream-source" default:"stream://localhost:9081" help:"ActionStream source (stream://host:port or stream:///path/to.sock)"`
+
+	ProgramAccount string `name:"program-account" help:"Gift program account (gift.vaulta on Vaulta, gift.gm on Jungle 4)"`
 }
