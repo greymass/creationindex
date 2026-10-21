@@ -4,7 +4,7 @@ You run creationindex to answer how accounts come into existence on an Antelope 
 
 ## Building
 
-Go 1.25 or later.
+Building needs Go 1.25 or later.
 
 ```
 make build     # binary at ./creationindex
