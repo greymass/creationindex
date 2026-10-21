@@ -38,6 +38,7 @@ func main() {
 	logger.Printf("startup", "creationindex %s starting", Version)
 	logger.Printf("startup", "  db-path: %s", cfg.DBPath)
 	logger.Printf("startup", "  actionstream-source: %s", cfg.ActionStreamSource)
+	logger.Printf("startup", "  program-account: %s", cfg.ProgramAccount)
 
 	db, err := store.Open(cfg.DBPath)
 	if err != nil {
@@ -49,12 +50,25 @@ func main() {
 		logger.Fatal("Failed to start syncer: %v", err)
 	}
 
+	var giftSyncer *GiftSyncer
+	if cfg.ProgramAccount == "" {
+		logger.Printf("startup", "program-account is not set, gift stream disabled")
+	} else {
+		giftSyncer = NewGiftSyncer(cfg, db)
+		if err := giftSyncer.Start(); err != nil {
+			logger.Fatal("Failed to start gift syncer: %v", err)
+		}
+	}
+
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
 
 	logger.Printf("startup", "Shutting down...")
 	syncer.Stop()
+	if giftSyncer != nil {
+		giftSyncer.Stop()
+	}
 	if err := db.Close(); err != nil {
 		logger.Printf("startup", "Failed to close database: %v", err)
 	}

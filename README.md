@@ -21,6 +21,7 @@ Configuration is INI and command-line flags; flags override the file. Copy `conf
 |-----|---------|---------|
 | `db-path` | Pebble database directory | `./creationindex.db` |
 | `actionstream-source` | Roborovski actionstream URL (`stream://host:port` or `stream:///path.sock`) | `stream://localhost:9081` |
+| `program-account` | Gift program account whose actions the gift stream indexes (`gift.vaulta` on Vaulta, `gift.gm` on Jungle 4); the gift stream stays off when unset | none |
 | `log-filter` | Comma-separated log categories | `startup,sync,status` |
 | `log-file` | Also write logs to this file | none |
 | `debug` | Log every category | `false` |
