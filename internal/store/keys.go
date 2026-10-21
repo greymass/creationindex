@@ -29,6 +29,10 @@ func DayFromBlockTime(blockTime uint32) uint32 {
 	return uint32((blockTimeEpoch + uint64(blockTime)/2) / 86400)
 }
 
+func BlockTimeUnixMilli(blockTime uint32) int64 {
+	return blockTimeEpoch*1000 + int64(blockTime)*500
+}
+
 func schemaKey() []byte        { return []byte{prefixMeta, metaSchema} }
 func creationCountKey() []byte { return []byte{prefixMeta, metaCreationCount} }
 

@@ -3,6 +3,10 @@
 # Storage
 db-path = ./creationindex.db
 
+# HTTP API ('none' to disable)
+http-listen = :9480
+# http-socket = ./creationindex.sock
+
 # Data source
 actionstream-source = stream://localhost:9081
 
