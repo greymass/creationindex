@@ -2,6 +2,7 @@ package attribution
 
 import (
 	"bufio"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"os"
@@ -290,5 +291,20 @@ func TestNotificationCopiesIgnored(t *testing.T) {
 	}
 	if len(got) != 1 || len(got[0].Contributions) != 1 || *got[0].Contributions[0].Bytes != 3299 {
 		t.Fatalf("got %+v", got)
+	}
+}
+
+func TestUngiftramBinaryFallback(t *testing.T) {
+	data := binary.LittleEndian.AppendUint64(nil, chain.StringToName("grbweziu.gm"))
+	data = binary.LittleEndian.AppendUint64(data, chain.StringToName("gift.gm"))
+	data = append(data, 4)
+	data = append(data, "back"...)
+	a := actionstream.Action{GlobalSeq: 1, Contract: System, Receiver: System, Action: "ungiftram", ActionData: data, TrxID: "1ddef957020db81cbf97254e7d28af1832a5367ee3a7c53ff331524fc095e631"}
+	events, err := ProgramEvents([]actionstream.Action{a}, chain.StringToName("gift.gm"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 1 || events[0].Type != store.EventReturn || events[0].From != chain.StringToName("grbweziu.gm") || events[0].Memo != "back" || events[0].Bytes != nil {
+		t.Errorf("events %+v", events)
 	}
 }

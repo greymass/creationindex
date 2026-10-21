@@ -156,3 +156,18 @@ func GetDailyFigures(r pebble.Reader, k []byte) (*DailyFigures, error) {
 func SetDailyFigures(b *pebble.Batch, k []byte, d *DailyFigures) error {
 	return b.Set(k, EncodeDailyFigures(d), nil)
 }
+
+func GetGiftedBalance(r pebble.Reader, giftee uint64) (int64, error) {
+	val, err := get(r, GiftedBalanceKey(giftee))
+	if err != nil || val == nil {
+		return 0, err
+	}
+	return DecodeGiftedBalance(val)
+}
+
+func SetGiftedBalance(b *pebble.Batch, giftee uint64, bytes int64) error {
+	if bytes == 0 {
+		return b.Delete(GiftedBalanceKey(giftee), nil)
+	}
+	return b.Set(GiftedBalanceKey(giftee), EncodeGiftedBalance(bytes), nil)
+}

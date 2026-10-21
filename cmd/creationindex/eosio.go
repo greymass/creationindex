@@ -6,6 +6,7 @@ import (
 	"github.com/cockroachdb/pebble"
 	"github.com/greymass/creationindex/internal/attribution"
 	"github.com/greymass/creationindex/internal/daily"
+	"github.com/greymass/creationindex/internal/program"
 	"github.com/greymass/creationindex/internal/store"
 	"github.com/greymass/roborovski/libraries/actionstream"
 	"github.com/greymass/roborovski/libraries/chain"
@@ -38,8 +39,11 @@ func (t *txBuffer) take() []actionstream.Action {
 	return done
 }
 
-func applyEosioTransaction(b *pebble.Batch, actions []actionstream.Action, program uint64) (int, error) {
-	creations, err := attribution.Attribute(actions, program)
+func applyEosioTransaction(b *pebble.Batch, actions []actionstream.Action, programAccount uint64) (int, error) {
+	if err := program.ApplyEosio(b, actions, programAccount); err != nil {
+		return 0, err
+	}
+	creations, err := attribution.Attribute(actions, programAccount)
 	if err != nil || len(creations) == 0 {
 		return 0, err
 	}
