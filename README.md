@@ -19,10 +19,13 @@ Configuration is INI and command-line flags; flags override the file. Copy `conf
 
 | Key | Meaning | Default |
 |-----|---------|---------|
+| `db-path` | Pebble database directory | `./creationindex.db` |
 | `actionstream-source` | Roborovski actionstream URL (`stream://host:port` or `stream:///path.sock`) | `stream://localhost:9081` |
 | `log-filter` | Comma-separated log categories | `startup,sync,status` |
 | `log-file` | Also write logs to this file | none |
 | `debug` | Log every category | `false` |
+
+When a new build changes the storage schema, creationindex refuses to start and logs the database path. Delete that directory and start creationindex again; it replays from seq 1.
 
 ## Licence
 

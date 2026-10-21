@@ -1,5 +1,8 @@
 # creationindex configuration
 
+# Storage
+db-path = ./creationindex.db
+
 # Data source
 actionstream-source = stream://localhost:9081
 
