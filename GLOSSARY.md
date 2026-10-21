@@ -43,3 +43,15 @@ _Avoid_: gift contract (for the account), endowment account
 **Return**:
 An `ungiftram` by which a giftee sends program RAM back to the program account.
 _Avoid_: clawback, refund
+
+**Quota window**:
+The rolling 24-hour period a program creator's daily quota applies to. It opens at the creator's first gift after the previous window has run its 24 hours, so its boundaries drift away from midnight. Quota use is always reported per quota window.
+_Avoid_: day, quota day
+
+**Program-gifted balance**:
+The RAM a giftee holds from the program account: every program gift to it since its last return. A return hands back the whole balance.
+_Avoid_: gift balance, outstanding gift
+
+**Program event**:
+One recorded change in the gift program's history: an admin action on the program account, a program gift, a return, or other RAM moving into or out of the program account.
+_Avoid_: program log, program action
