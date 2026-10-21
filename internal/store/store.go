@@ -126,3 +126,18 @@ func GetCreationCount(r pebble.Reader) (uint64, error) {
 func SetCreationCount(b *pebble.Batch, n uint64) error {
 	return b.Set(creationCountKey(), binary.BigEndian.AppendUint64(nil, n), nil)
 }
+
+func GetCreation(r pebble.Reader, account uint64) (*Creation, error) {
+	val, err := get(r, CreationKey(account))
+	if err != nil || val == nil {
+		return nil, err
+	}
+	return DecodeCreation(val)
+}
+
+func PutCreation(b *pebble.Batch, c *Creation) error {
+	if err := b.Set(CreationKey(c.Account), EncodeCreation(c), nil); err != nil {
+		return err
+	}
+	return b.Set(CreatorIndexKey(c.Creator, c.GlobalSeq), EncodeName(c.Account), nil)
+}

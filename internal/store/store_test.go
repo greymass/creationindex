@@ -108,3 +108,30 @@ func TestCursorsAreSeparateAndBatched(t *testing.T) {
 		t.Errorf("creation count = %d, %v", n, err)
 	}
 }
+
+func TestPutCreationWritesRecordAndCreatorIndex(t *testing.T) {
+	s, _ := openTemp(t)
+	defer s.Close()
+	c := &Creation{Account: 7, Creator: 3, BlockNum: 9, BlockTime: 11, GlobalSeq: 42}
+	b := s.NewBatch()
+	if err := PutCreation(b, c); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Commit(b); err != nil {
+		t.Fatal(err)
+	}
+	got, err := GetCreation(s.DB(), 7)
+	if err != nil || got == nil || got.GlobalSeq != 42 || got.Creator != 3 {
+		t.Fatalf("GetCreation = %+v, %v", got, err)
+	}
+	if missing, err := GetCreation(s.DB(), 8); missing != nil || err != nil {
+		t.Errorf("GetCreation(unknown) = %+v, %v", missing, err)
+	}
+	val, err := get(s.DB(), CreatorIndexKey(3, 42))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if account, err := DecodeName(val); err != nil || account != 7 {
+		t.Errorf("creator index = %d, %v", account, err)
+	}
+}
