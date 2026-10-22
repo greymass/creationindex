@@ -39,7 +39,7 @@ You query creationindex with GET query parameters, or with a POST JSON body that
 curl 'localhost:9480/v1/creationindex/get_creation?account=willsunshine'
 ```
 
-The network routes are `get_creation`, `get_creations` (by `creator` or `program_creator`, paged with `after` and `limit`), `get_daily` (UTC days `from` and `to`, at most 366), `get_day_creators` (one `day`, ranked, paged with `offset` and `limit`) and `health`.
+The network routes are `get_creation`, `get_creations` (by `creator` or `program_creator`, paged with `after` and `limit`), `get_daily` (UTC days `from` and `to`, at most 366), `get_day_creators` (one `day`, ranked, paged with `offset` and `limit`), `get_creators` (creators ranked by creations summed over UTC days `from` to `to`, at most 366, paged with `offset` and `limit`) and `health`.
 
 The program routes answer for the configured `program-account`. `get_program_daily` gives program gifts per UTC day per program creator, with a histogram of gifted byte sizes. `get_quota` takes a `program_creator` and lists each registration from `addcreator` to `rmcreator` with its quota changes, suspensions and quota windows, rebuilt with the gift contract's arithmetic. `get_program_events` lists program events oldest first, filtered by `type` (`admin`, `program_gift`, `return`, `ram_movement`) and `program_creator`, paged with `after` and `limit`. `get_endowment` reads the program account's RAM from `chain-url` and caches it for 10 seconds.
 
