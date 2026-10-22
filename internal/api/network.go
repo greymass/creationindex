@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/greymass/creationindex/internal/daily"
 	"github.com/greymass/creationindex/internal/store"
 )
 
@@ -241,14 +242,53 @@ func (s *Server) getDayCreators(r pebble.Reader, p params) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	rows, err := sumDayCreators(r, day, day)
+	if err != nil {
+		return nil, err
+	}
+	creators, more, next := rankCreators(rows, offset, limit)
+	return dayCreatorsJSON{Day: dayString(day), Creators: creators, More: more, Offset: next}, nil
+}
 
-	prefix := store.DailyDayCreatorPrefix(day)
-	iter, err := r.NewIter(&pebble.IterOptions{LowerBound: prefix, UpperBound: store.PrefixEnd(prefix)})
+type creatorsJSON struct {
+	From     string           `json:"from"`
+	To       string           `json:"to"`
+	Creators []dayCreatorJSON `json:"creators"`
+	More     bool             `json:"more"`
+	Offset   uint64           `json:"offset"`
+}
+
+func (s *Server) getCreators(r pebble.Reader, p params) (any, error) {
+	from, to, err := p.dayRange()
+	if err != nil {
+		return nil, err
+	}
+	offset, err := p.uint("offset", 0)
+	if err != nil {
+		return nil, err
+	}
+	limit, err := p.limit()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := sumDayCreators(r, from, to)
+	if err != nil {
+		return nil, err
+	}
+	creators, more, next := rankCreators(rows, offset, limit)
+	return creatorsJSON{From: dayString(from), To: dayString(to), Creators: creators, More: more, Offset: next}, nil
+}
+
+func sumDayCreators(r pebble.Reader, from, to uint32) ([]dayCreatorRow, error) {
+	iter, err := r.NewIter(&pebble.IterOptions{
+		LowerBound: store.DailyDayCreatorPrefix(from),
+		UpperBound: store.PrefixEnd(store.DailyDayCreatorPrefix(to)),
+	})
 	if err != nil {
 		return nil, err
 	}
 	defer iter.Close()
-	var rows []dayCreatorRow
+	sums := map[uint64]*store.DailyFigures{}
 	for iter.First(); iter.Valid(); iter.Next() {
 		_, creator, ok := store.DecodeDailyDayCreatorKey(iter.Key())
 		if !ok {
@@ -258,28 +298,39 @@ func (s *Server) getDayCreators(r pebble.Reader, p params) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		rows = append(rows, dayCreatorRow{creator, d})
+		if sum := sums[creator]; sum == nil {
+			sums[creator] = d
+		} else if err := daily.Merge(sum, d); err != nil {
+			return nil, err
+		}
 	}
 	if err := iter.Error(); err != nil {
 		return nil, err
 	}
-	slices.SortStableFunc(rows, func(a, b dayCreatorRow) int {
-		return cmp.Compare(b.figures.Creations, a.figures.Creations)
-	})
+	rows := make([]dayCreatorRow, 0, len(sums))
+	for creator, d := range sums {
+		rows = append(rows, dayCreatorRow{creator, d})
+	}
+	return rows, nil
+}
 
+func rankCreators(rows []dayCreatorRow, offset uint64, limit int) ([]dayCreatorJSON, bool, uint64) {
+	slices.SortFunc(rows, func(a, b dayCreatorRow) int {
+		return cmp.Or(cmp.Compare(b.figures.Creations, a.figures.Creations), cmp.Compare(a.creator, b.creator))
+	})
 	total := uint64(len(rows))
 	start := min(offset, total)
 	end := min(start+uint64(limit), total)
-	out := dayCreatorsJSON{Day: dayString(day), Creators: []dayCreatorJSON{}, More: end < total, Offset: end}
+	out := []dayCreatorJSON{}
 	for _, row := range rows[start:end] {
-		out.Creators = append(out.Creators, dayCreatorJSON{
+		out = append(out, dayCreatorJSON{
 			Creator:             name(row.creator),
 			Creations:           row.figures.Creations,
 			CreationsWithoutRAM: row.figures.CreationsWithoutRAM,
 			Kinds:               encodeKinds(row.figures),
 		})
 	}
-	return out, nil
+	return out, end < total, end
 }
 
 type healthJSON struct {

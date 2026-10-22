@@ -32,6 +32,7 @@ var routes = map[string]handler{
 	"get_creations":      (*Server).getCreations,
 	"get_daily":          (*Server).getDaily,
 	"get_day_creators":   (*Server).getDayCreators,
+	"get_creators":       (*Server).getCreators,
 	"get_program_daily":  (*Server).getProgramDaily,
 	"get_quota":          (*Server).getQuota,
 	"get_program_events": (*Server).getProgramEvents,

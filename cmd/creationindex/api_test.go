@@ -177,6 +177,9 @@ func TestRequestErrors(t *testing.T) {
 		{"GET", "/v1/creationindex/get_daily?from=2025-10-20&to=2026-10-21", "", 400, "at most 366 days per request"},
 		{"GET", "/v1/creationindex/get_daily?from=20261020&to=2026-10-21", "", 400, "from must be a day as YYYY-MM-DD"},
 		{"GET", "/v1/creationindex/get_day_creators", "", 400, "day is required"},
+		{"GET", "/v1/creationindex/get_creators?to=2026-10-21", "", 400, "from is required"},
+		{"GET", "/v1/creationindex/get_creators?from=2025-10-20&to=2026-10-21", "", 400, "at most 366 days per request"},
+		{"GET", "/v1/creationindex/get_creators?from=2026-10-20&to=2026-10-21&limit=0", "", 400, "limit must be between 1 and 1000"},
 		{"GET", "/v1/creationindex/get_nothing", "", 404, "not found"},
 		{"DELETE", "/v1/creationindex/health", "", 405, "method not allowed"},
 	} {
@@ -363,6 +366,90 @@ func TestGetDayCreatorsRanksAndPages(t *testing.T) {
 			}
 		}],
 		"more": false, "offset": 1
+	}`)
+}
+
+func TestGetCreatorsSumsRanksAndPages(t *testing.T) {
+	db := vaultaStore(t)
+	day := store.DayFromBlockTime(1)
+	b := db.NewBatch()
+	for _, r := range []struct {
+		day       uint32
+		creator   string
+		creations uint64
+		bytes     uint64
+	}{
+		{day, "carol", 2, 100}, {day, "alice", 1, 10}, {day, "bob", 2, 0},
+		{day + 1, "alice", 3, 20}, {day + 1, "dave", 1, 0}, {day + 1, "carol", 1, 50},
+		{day + 2, "erin", 9, 0},
+	} {
+		d := &store.DailyFigures{Creations: r.creations}
+		if r.bytes > 0 {
+			*d.Kind(store.KindBuy) = store.Figures{Contributions: r.creations, Bytes: r.bytes}
+		}
+		if err := store.SetDailyFigures(b, store.DailyDayCreatorKey(r.day, chain.StringToName(r.creator)), d); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.Commit(b); err != nil {
+		t.Fatal(err)
+	}
+	v := api.New(db, "gift.vaulta", "")
+
+	rank := func(path string) ([]string, bool, uint64) {
+		code, body := call(t, v, "GET", path, "")
+		if code != 200 {
+			t.Fatalf("%s: %d %s", path, code, body)
+		}
+		var out struct {
+			Creators []struct {
+				Creator string `json:"creator"`
+			} `json:"creators"`
+			More   bool   `json:"more"`
+			Offset uint64 `json:"offset"`
+		}
+		if err := json.Unmarshal([]byte(body), &out); err != nil {
+			t.Fatal(err)
+		}
+		var names []string
+		for _, c := range out.Creators {
+			names = append(names, c.Creator)
+		}
+		return names, out.More, out.Offset
+	}
+	if got, more, off := rank("/v1/creationindex/get_creators?from=2000-01-01&to=2000-01-02&limit=2"); !slices.Equal(got, []string{"alice", "carol"}) || !more || off != 2 {
+		t.Errorf("first page %v more=%v offset=%d", got, more, off)
+	}
+	if got, more, off := rank("/v1/creationindex/get_creators?from=2000-01-01&to=2000-01-02&limit=2&offset=2"); !slices.Equal(got, []string{"bob", "dave"}) || more || off != 4 {
+		t.Errorf("second page %v more=%v offset=%d", got, more, off)
+	}
+	if got, _, _ := rank("/v1/creationindex/get_creators?from=2000-01-02&to=2000-01-03"); !slices.Equal(got, []string{"erin", "alice", "carol", "dave"}) {
+		t.Errorf("later range %v", got)
+	}
+	assertJSON(t, v, "GET", "/v1/creationindex/get_creators?from=2000-01-01&to=2000-01-02&limit=1", "", 200, `{
+		"from": "2000-01-01", "to": "2000-01-02",
+		"creators": [{
+			"creator": "alice", "creations": 4, "creations_without_ram": 0,
+			"kinds": {
+				"buy": {"contributions": 4, "bytes": 30, "without_bytes": 0, "requested_bytes": null, "quantity": null},
+				"transfer": `+zeroKind+`, "gift": `+zeroKind+`, "program_gift": `+zeroKind+`, "quota_set": `+zeroKind+`
+			}
+		}],
+		"more": true, "offset": 1
+	}`)
+	assertJSON(t, v, "GET", "/v1/creationindex/get_creators?from=2018-06-09&to=2018-06-10", "", 200, `{
+		"from": "2018-06-09", "to": "2018-06-10",
+		"creators": [{
+			"creator": "eosio", "creations": 31, "creations_without_ram": 1,
+			"kinds": {
+				"buy": {"contributions": 30, "bytes": null, "without_bytes": 30, "requested_bytes": 245760, "quantity": null},
+				"transfer": `+zeroKind+`, "gift": `+zeroKind+`, "program_gift": `+zeroKind+`, "quota_set": `+zeroKind+`
+			}
+		}],
+		"more": false, "offset": 1
+	}`)
+	assertJSON(t, v, "GET", "/v1/creationindex/get_creators?from=2026-10-22&to=2026-10-23", "", 200, `{
+		"from": "2026-10-22", "to": "2026-10-23", "creators": [], "more": false, "offset": 0
 	}`)
 }
 
